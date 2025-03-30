@@ -647,4 +647,205 @@ document.addEventListener('DOMContentLoaded', () => {
         themeIcon.classList.replace('fa-sun', 'fa-moon');
       }
     }
+    
+    // Theme Switcher
+    function initThemeSwitcher() {
+      // Create the theme switcher UI
+      const themeSwitcherContainer = document.createElement('div');
+      themeSwitcherContainer.className = 'theme-switcher-container';
+      themeSwitcherContainer.innerHTML = `
+        <div class="theme-switcher-toggle">
+          <i class="fas fa-palette"></i>
+        </div>
+        <div class="theme-options">
+          <div class="theme-options-header">
+            <h3>Select Theme</h3>
+            <button class="theme-close-btn"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="theme-list">
+            <div class="theme-loading">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(themeSwitcherContainer);
+      
+      // Get DOM elements
+      const themeToggle = themeSwitcherContainer.querySelector('.theme-switcher-toggle');
+      const themeOptions = themeSwitcherContainer.querySelector('.theme-options');
+      const themeCloseBtn = themeSwitcherContainer.querySelector('.theme-close-btn');
+      const themeList = themeSwitcherContainer.querySelector('.theme-list');
+      
+      // Toggle theme options panel
+      themeToggle.addEventListener('click', () => {
+        themeOptions.classList.toggle('show');
+        if (themeOptions.classList.contains('show')) {
+          loadThemes();
+        }
+      });
+      
+      // Close theme options panel
+      themeCloseBtn.addEventListener('click', () => {
+        themeOptions.classList.remove('show');
+      });
+      
+      // Close when clicking outside
+      window.addEventListener('click', (e) => {
+        if (!themeSwitcherContainer.contains(e.target)) {
+          themeOptions.classList.remove('show');
+        }
+      });
+      
+      // Load available themes
+      function loadThemes() {
+        themeList.innerHTML = `
+          <div class="theme-loading">
+            <div class="spinner"></div>
+          </div>
+        `;
+        
+        fetch('/api/themes')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            renderThemeList(data.themes, data.activeTheme);
+          })
+          .catch(error => {
+            console.error('Error loading themes:', error);
+            themeList.innerHTML = `
+              <div class="theme-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error loading themes</p>
+              </div>
+            `;
+          });
+      }
+      
+      // Render theme list
+      function renderThemeList(themes, activeTheme) {
+        if (!themes || themes.length === 0) {
+          themeList.innerHTML = `
+            <div class="theme-empty">
+              <i class="fas fa-info-circle"></i>
+              <p>No themes found. Add CSS files to the 'themes' folder.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Add default theme option
+        const defaultThemeItem = document.createElement('div');
+        defaultThemeItem.className = `theme-item ${activeTheme === 'default' ? 'active' : ''}`;
+        defaultThemeItem.dataset.theme = 'default';
+        defaultThemeItem.innerHTML = `
+          <div class="theme-color default-theme"></div>
+          <span>Default Theme</span>
+          ${activeTheme === 'default' ? '<i class="fas fa-check"></i>' : ''}
+        `;
+        
+        const themeItems = [defaultThemeItem];
+        
+        // Create theme items for each CSS file
+        themes.forEach(theme => {
+          const themeItem = document.createElement('div');
+          themeItem.className = `theme-item ${activeTheme === theme ? 'active' : ''}`;
+          themeItem.dataset.theme = theme;
+          
+          // Create a pretty name from the filename (remove .css and capitalize)
+          const themeName = theme.replace('.css', '')
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          
+          themeItem.innerHTML = `
+            <div class="theme-color" style="background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));"></div>
+            <span>${themeName}</span>
+            ${activeTheme === theme ? '<i class="fas fa-check"></i>' : ''}
+          `;
+          
+          themeItems.push(themeItem);
+        });
+        
+        // Clear and append all theme items
+        themeList.innerHTML = '';
+        themeItems.forEach(item => {
+          themeList.appendChild(item);
+          
+          // Add click event to select theme
+          item.addEventListener('click', () => {
+            setActiveTheme(item.dataset.theme);
+          });
+        });
+      }
+      
+      // Set active theme
+      function setActiveTheme(themeName) {
+        fetch('/api/themes/set', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ themeName }),
+        })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (data.success) {
+              // Update link element
+              let themeLink = document.getElementById('theme-stylesheet');
+              
+              if (!themeLink) {
+                // Create the link element if it doesn't exist
+                themeLink = document.createElement('link');
+                themeLink.id = 'theme-stylesheet';
+                themeLink.rel = 'stylesheet';
+                document.head.appendChild(themeLink);
+              }
+              
+              // Update href based on selected theme
+              if (themeName === 'default') {
+                themeLink.href = '/styles.css';
+              } else {
+                themeLink.href = `/themes/${themeName}`;
+              }
+              
+              // Update active state in UI
+              const activeItem = themeList.querySelector('.theme-item.active');
+              if (activeItem) {
+                activeItem.classList.remove('active');
+                activeItem.querySelector('.fas.fa-check')?.remove();
+              }
+              
+              const newActiveItem = themeList.querySelector(`[data-theme="${themeName}"]`);
+              if (newActiveItem) {
+                newActiveItem.classList.add('active');
+                if (!newActiveItem.querySelector('.fas.fa-check')) {
+                  const checkIcon = document.createElement('i');
+                  checkIcon.className = 'fas fa-check';
+                  newActiveItem.appendChild(checkIcon);
+                }
+              }
+              
+              // Theme change complete (removed toast notification)
+            }
+          })
+          .catch(error => {
+            console.error('Error setting theme:', error);
+            showToast('Error setting theme. See console for details.', 'error');
+          });
+      }
+    }
+  
+    // Initialize theme switcher
+    initThemeSwitcher();
   });

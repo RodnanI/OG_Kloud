@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
+const session = require('express-session');
 
 const app = express();
 const PORT = 3000;
@@ -11,6 +12,12 @@ const PORT = 3000;
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
+}
+
+// Create a themes directory if it doesn't exist
+const themesDir = path.join(__dirname, 'public', 'themes');
+if (!fs.existsSync(themesDir)) {
+  fs.mkdirSync(themesDir, { recursive: true });
 }
 
 // Configure multer for file storage
@@ -43,6 +50,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+
+// Add session middleware
+app.use(session({
+  secret: 'kloud-themes-secret',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days
+}));
 
 // Helper function to get all files recursively
 function getAllFiles(dir, currentPath = '') {
@@ -292,6 +307,61 @@ app.get('/api/serverinfo', (req, res) => {
     addresses: addresses,
     port: PORT
   });
+});
+
+// API endpoint to get available CSS themes
+app.get('/api/themes', (req, res) => {
+  try {
+    const files = fs.readdirSync(themesDir);
+    const cssFiles = files.filter(file => path.extname(file).toLowerCase() === '.css');
+    
+    // Get the current active theme from the session or default to original
+    const activeTheme = req.session?.activeTheme || 'default';
+    
+    res.json({ 
+      themes: cssFiles,
+      activeTheme: activeTheme
+    });
+  } catch (error) {
+    console.error('Error reading themes directory:', error);
+    res.status(500).json({ error: 'Failed to get available themes' });
+  }
+});
+
+// API endpoint to set active theme
+app.post('/api/themes/set', (req, res) => {
+  try {
+    const { themeName } = req.body;
+    
+    if (!themeName) {
+      return res.status(400).json({ error: 'Theme name is required' });
+    }
+    
+    // If theme is "default", use the original styles.css
+    if (themeName === 'default') {
+      // Store in session if using sessions
+      if (req.session) {
+        req.session.activeTheme = 'default';
+      }
+      return res.json({ success: true, themeName: 'default' });
+    }
+    
+    // Check if the theme exists
+    const themePath = path.join(themesDir, themeName);
+    if (!fs.existsSync(themePath)) {
+      return res.status(404).json({ error: 'Theme not found' });
+    }
+    
+    // Store in session if using sessions
+    if (req.session) {
+      req.session.activeTheme = themeName;
+    }
+    
+    res.json({ success: true, themeName });
+  } catch (error) {
+    console.error('Error setting theme:', error);
+    res.status(500).json({ error: 'Failed to set theme' });
+  }
 });
 
 // Start server
