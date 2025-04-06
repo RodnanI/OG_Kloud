@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize theme from localStorage
   initTheme();
   
+  // Setup fade-in animation for title
+  setupFadeInLetters();
+  
   // Load files on page load
   loadFiles(currentPath);
   
@@ -117,6 +120,34 @@ document.addEventListener('DOMContentLoaded', () => {
   themeToggle.addEventListener('change', () => {
     toggleTheme();
   });
+  
+  // Setup fade-in letters animation for title
+  function setupFadeInLetters() {
+    // Get the title element
+    const title = document.querySelector('header h1');
+    if (!title) return;
+    
+    // Store the icon
+    const cloudIcon = title.querySelector('i')?.outerHTML || '<i class="fas fa-cloud-upload-alt"></i>';
+    
+    // Get the text content (Kloud)
+    const titleText = title.textContent.trim();
+    
+    // Split the text into individual letters with opacity 0 and animation delay
+    const letters = titleText.split('').map((letter, i) => 
+      `<span style="opacity: 0; animation-delay: ${0.3 + i * 0.1}s">${letter}</span>`
+    ).join('');
+    
+    // Update the title HTML with the cloud icon and letter spans
+    title.innerHTML = `${cloudIcon} ${letters}`;
+    
+    // Also animate the icon
+    const icon = title.querySelector('i');
+    if (icon) {
+      icon.style.opacity = '0';
+      icon.style.animation = 'fade-in-letter 0.8s ease-out forwards';
+    }
+  }
   
   // Functions
   function showToast(message, type = 'info') {
@@ -498,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   function downloadFile(filePath, displayName) {
     // Create a link and simulate a click to download the file
-    const downloadUrl = `/api/download/${encodeURIComponent(filePath)}`;
+    const downloadUrl = `/api/download?path=${encodeURIComponent(filePath)}`;
     
     // Create a temporary link element and trigger download
     const link = document.createElement('a');
@@ -516,7 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const confirmBtn = itemElement.querySelector('.confirm-delete-btn');
       confirmBtn.classList.add('deleting');
       
-      const response = await fetch(`/api/items/${encodeURIComponent(itemPath)}`, {
+      const response = await fetch(`/api/items?path=${encodeURIComponent(itemPath)}`, {
         method: 'DELETE',
       });
       
