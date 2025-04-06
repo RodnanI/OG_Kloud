@@ -43,18 +43,19 @@
         <div class="file-input-container">
           <label for="file-input" class="file-input-label">
             <i class="fas fa-file-upload"></i>
-            <span id="file-name">Choose a file...</span>
+            <span id="file-name">Choose files...</span>
           </label>
-          <input type="file" id="file-input" required>
+          <input type="file" id="file-input" multiple required>
         </div>
         <div class="form-group">
-          <input type="text" id="display-name" placeholder="Enter file name (optional)">
+          <input type="text" id="display-name" placeholder="Enter display name (optional for single file)">
         </div>
         <button type="submit" id="upload-button">
           <i class="fas fa-cloud-upload-alt"></i>
           Upload
         </button>
       </form>
+      <div id="selected-files-container" class="selected-files-container"></div>
       <div id="upload-progress" class="progress-bar">
         <div class="progress" id="progress-bar"></div>
       </div>

@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const filesList = document.getElementById('files-list');
   const uploadProgress = document.getElementById('upload-progress');
   const progressBar = document.getElementById('progress-bar');
+  const selectedFilesContainer = document.getElementById('selected-files-container');
   const toast = document.getElementById('toast');
   const breadcrumb = document.getElementById('breadcrumb');
   const newFolderBtn = document.getElementById('new-folder-btn');
@@ -19,6 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // State
   let currentPath = '';
+  let selectedFiles = [];
+  let uploadQueue = [];
+  let isUploading = false;
   
   // File type icons mapping
   const fileTypeIcons = {
@@ -59,22 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load files on page load
   loadFiles(currentPath);
   
+  // Setup drag and drop functionality
+  setupDragAndDrop();
+  
   // Event listeners
   uploadForm.addEventListener('submit', handleFileUpload);
   
   fileInput.addEventListener('change', () => {
-    if (fileInput.files.length > 0) {
-      const fileName = fileInput.files[0].name;
-      fileNameDisplay.textContent = fileName;
-      
-      // Pre-fill the display name input with the file name
-      if (!displayNameInput.value) {
-        displayNameInput.value = fileName;
-      }
-    } else {
-      fileNameDisplay.textContent = 'Choose a file...';
-      displayNameInput.value = '';
-    }
+    updateSelectedFiles();
   });
   
   // Breadcrumb navigation
@@ -621,77 +617,443 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
+  // Update selected files preview
+  function updateSelectedFiles() {
+    if (!fileInput.files.length) {
+      selectedFilesContainer.style.display = 'none';
+      fileNameDisplay.textContent = 'Choose files...';
+      return;
+    }
+    
+    const files = Array.from(fileInput.files);
+    selectedFiles = files;
+    
+    // Update the file name display with count
+    fileNameDisplay.textContent = `${files.length} file${files.length > 1 ? 's' : ''} selected`;
+    
+    // Clear the container
+    selectedFilesContainer.innerHTML = '';
+    
+    // Create a preview for each file
+    files.forEach((file, index) => {
+      const fileItem = document.createElement('div');
+      fileItem.className = 'selected-file-item';
+      fileItem.dataset.index = index;
+      
+      // Get file icon based on type
+      const fileIconClass = getFileIconFromMime(file.type) || getFileIcon(file.name);
+      
+      fileItem.innerHTML = `
+        <div class="selected-file-info">
+          <div class="selected-file-icon">
+            <i class="fas ${fileIconClass}"></i>
+          </div>
+          <div class="selected-file-name">${file.name}</div>
+          <div class="selected-file-size">${formatFileSize(file.size)}</div>
+        </div>
+        <button type="button" class="selected-file-remove" data-index="${index}">
+          <i class="fas fa-times"></i>
+        </button>
+      `;
+      
+      selectedFilesContainer.appendChild(fileItem);
+      
+      // Add remove event listener
+      const removeButton = fileItem.querySelector('.selected-file-remove');
+      removeButton.addEventListener('click', () => {
+        removeSelectedFile(index);
+      });
+    });
+    
+    // Show the container if there are files
+    if (files.length > 0) {
+      selectedFilesContainer.style.display = 'block';
+    } else {
+      selectedFilesContainer.style.display = 'none';
+    }
+    
+    // Adjust display name input placeholder based on number of files
+    if (files.length > 1) {
+      displayNameInput.placeholder = "Display name will use original filenames";
+      displayNameInput.disabled = true;
+      displayNameInput.value = "";
+    } else {
+      displayNameInput.placeholder = "Enter display name (optional)";
+      displayNameInput.disabled = false;
+      // Pre-fill with the file name for convenience
+      if (!displayNameInput.value && files.length === 1) {
+        displayNameInput.value = files[0].name;
+      }
+    }
+  }
+  
+  // Remove a file from the selected files
+  function removeSelectedFile(index) {
+    // Can't directly modify a FileList, need to create a new one
+    // We'll create a new input element and copy all files except the one to remove
+    const newFileInput = document.createElement('input');
+    newFileInput.type = 'file';
+    newFileInput.multiple = true;
+    
+    // Create a DataTransfer object to build a new FileList
+    const dataTransfer = new DataTransfer();
+    
+    // Add all files except the one to remove
+    Array.from(fileInput.files).forEach((file, i) => {
+      if (i !== index) {
+        dataTransfer.items.add(file);
+      }
+    });
+    
+    // Set the new file list
+    fileInput.files = dataTransfer.files;
+    
+    // Update the UI
+    updateSelectedFiles();
+  }
+  
+  // Get file icon from MIME type
+  function getFileIconFromMime(mimeType) {
+    if (!mimeType) return null;
+    
+    if (mimeType.startsWith('image/')) return 'fa-file-image';
+    if (mimeType.startsWith('video/')) return 'fa-file-video';
+    if (mimeType.startsWith('audio/')) return 'fa-file-audio';
+    if (mimeType.startsWith('text/')) return 'fa-file-alt';
+    if (mimeType.includes('pdf')) return 'fa-file-pdf';
+    if (mimeType.includes('word') || mimeType.includes('document')) return 'fa-file-word';
+    if (mimeType.includes('excel') || mimeType.includes('sheet')) return 'fa-file-excel';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'fa-file-powerpoint';
+    if (mimeType.includes('zip') || mimeType.includes('archive') || mimeType.includes('compressed')) return 'fa-file-archive';
+    if (mimeType.includes('html') || mimeType.includes('javascript') || mimeType.includes('css')) return 'fa-file-code';
+    
+    return null;
+  }
+  
+  // Setup drag and drop functionality
+  function setupDragAndDrop() {
+    const dropZone = document.querySelector('.file-input-label');
+    const uploadContainer = document.querySelector('.upload-container');
+    
+    // Prevent default behavior to allow drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      uploadContainer.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Highlight drop zone when dragging over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+      dropZone.classList.add('drag-over');
+    }
+    
+    function unhighlight() {
+      dropZone.classList.remove('drag-over');
+    }
+    
+    // Handle dropped files
+    dropZone.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      
+      if (files.length > 0) {
+        // Update the file input with the dropped files
+        fileInput.files = files;
+        
+        // Update the UI to show selected files
+        updateSelectedFiles();
+      }
+    }
+  }
+  
+  // Handle file upload
   async function handleFileUpload(event) {
     event.preventDefault();
     
     if (!fileInput.files.length) {
-      showToast('Please select a file to upload.', 'error');
+      showToast('Please select at least one file to upload.', 'error');
       return;
     }
     
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
+    const files = Array.from(fileInput.files);
     
-    // Add current folder path
-    formData.append('folderPath', currentPath);
+    // Prepare the upload queue
+    uploadQueue = files.map(file => ({
+      file,
+      status: 'pending', // pending, uploading, success, error
+      progress: 0,
+      displayName: files.length === 1 && displayNameInput.value.trim() ? displayNameInput.value.trim() : file.name
+    }));
     
-    // Add custom display name if provided
-    if (displayNameInput.value.trim()) {
-      formData.append('displayName', displayNameInput.value.trim());
+    // Create upload status UI
+    createUploadStatusUI();
+    
+    // Start the upload process
+    processUploadQueue();
+  }
+  
+  // Create upload status UI
+  function createUploadStatusUI() {
+    // Clear any existing UI
+    selectedFilesContainer.innerHTML = '';
+    
+    // Create UI for each file in the queue
+    uploadQueue.forEach((item, index) => {
+      const fileItem = document.createElement('div');
+      fileItem.className = 'selected-file-item';
+      fileItem.dataset.index = index;
+      
+      // Get file icon based on type
+      const fileIconClass = getFileIconFromMime(item.file.type) || getFileIcon(item.file.name);
+      
+      fileItem.innerHTML = `
+        <div class="selected-file-info">
+          <div class="selected-file-icon">
+            <i class="fas ${fileIconClass}"></i>
+          </div>
+          <div class="selected-file-name">${item.file.name}</div>
+          <div class="file-status">Pending</div>
+        </div>
+        <div class="file-progress-container">
+          <div class="file-progress-bar" style="width: 0%"></div>
+        </div>
+      `;
+      
+      selectedFilesContainer.appendChild(fileItem);
+    });
+    
+    selectedFilesContainer.style.display = 'block';
+  }
+  
+  // Process upload queue
+  async function processUploadQueue() {
+    if (isUploading || uploadQueue.length === 0) return;
+    
+    isUploading = true;
+    
+    // For single file upload, use the original method with display name
+    if (uploadQueue.length === 1) {
+      await uploadSingleFile(uploadQueue[0], 0);
+    } else {
+      // For multiple files, upload them in batches
+      await uploadMultipleFiles(uploadQueue);
     }
     
-    // Show progress bar
-    uploadProgress.style.display = 'block';
-    progressBar.style.width = '0%';
+    // All uploads completed
+    isUploading = false;
+    
+    // Count successes and failures
+    const successful = uploadQueue.filter(item => item.status === 'success').length;
+    const failed = uploadQueue.filter(item => item.status === 'error').length;
+    
+    // Show a summary toast
+    if (failed === 0) {
+      showToast(`Successfully uploaded ${successful} file${successful !== 1 ? 's' : ''}.`, 'success');
+    } else if (successful === 0) {
+      showToast(`Failed to upload ${failed} file${failed !== 1 ? 's' : ''}.`, 'error');
+    } else {
+      showToast(`Uploaded ${successful} file${successful !== 1 ? 's' : ''}, ${failed} failed.`, 'info');
+    }
+    
+    // Reset form
+    resetUploadForm();
+    
+    // Reload file list
+    loadFiles(currentPath);
+  }
+  
+  // Upload a single file
+  async function uploadSingleFile(item, index) {
+    const fileItem = selectedFilesContainer.querySelector(`[data-index="${index}"]`);
+    const progressBar = fileItem.querySelector('.file-progress-bar');
+    const statusEl = fileItem.querySelector('.file-status');
+    
+    // Update status
+    item.status = 'uploading';
+    statusEl.textContent = 'Uploading...';
     
     try {
+      // Create form data for this file
+      const formData = new FormData();
+      formData.append('file', item.file);
+      formData.append('folderPath', currentPath);
+      
+      // Add custom display name if provided (for single files)
+      if (item.displayName !== item.file.name) {
+        formData.append('displayName', item.displayName);
+      }
+      
+      // Create XMLHttpRequest for progress tracking
       const xhr = new XMLHttpRequest();
       
-      xhr.open('POST', '/api/upload', true);
-      
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percentComplete = (event.loaded / event.total) * 100;
-          progressBar.style.width = percentComplete + '%';
-        }
-      };
-      
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          // Reset form and progress bar
-          fileNameDisplay.textContent = 'Choose a file...';
-          uploadForm.reset();
-          setTimeout(() => {
-            uploadProgress.style.display = 'none';
-            progressBar.style.width = '0%';
-          }, 1000);
-          
-          const displayName = displayNameInput.value.trim() || file.name;
-          showToast(`${displayName} uploaded successfully!`, 'success');
-          
-          // Reload the files list
-          loadFiles(currentPath);
-        } else {
-          try {
-            const response = JSON.parse(xhr.responseText);
-            showToast(`Upload failed: ${response.error || xhr.statusText}`, 'error');
-          } catch (e) {
-            showToast(`Upload failed: ${xhr.statusText}`, 'error');
+      // Create a promise to handle the upload
+      await new Promise((resolve, reject) => {
+        xhr.open('POST', '/api/upload', true);
+        
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = (event.loaded / event.total) * 100;
+            progressBar.style.width = percentComplete + '%';
+            item.progress = percentComplete;
           }
-        }
-      };
+        };
+        
+        xhr.onload = function() {
+          if (xhr.status === 200) {
+            item.status = 'success';
+            statusEl.textContent = 'Complete';
+            statusEl.classList.add('success');
+            progressBar.style.width = '100%';
+            resolve();
+          } else {
+            item.status = 'error';
+            statusEl.textContent = 'Failed';
+            statusEl.classList.add('error');
+            
+            try {
+              const response = JSON.parse(xhr.responseText);
+              reject(new Error(response.error || 'Upload failed'));
+            } catch (e) {
+              reject(new Error('Upload failed'));
+            }
+          }
+        };
+        
+        xhr.onerror = function() {
+          item.status = 'error';
+          statusEl.textContent = 'Failed';
+          statusEl.classList.add('error');
+          reject(new Error('Network error'));
+        };
+        
+        xhr.send(formData);
+      });
       
-      xhr.onerror = function() {
-        showToast('Upload failed: Network error', 'error');
-      };
-      
-      xhr.send(formData);
     } catch (error) {
-      console.error('Error uploading file:', error);
-      showToast(`Error uploading file: ${error.message}`, 'error');
-      uploadProgress.style.display = 'none';
+      console.error(`Error uploading ${item.file.name}:`, error);
+      item.status = 'error';
+      statusEl.textContent = 'Failed';
+      statusEl.classList.add('error');
     }
+  }
+  
+  // Upload multiple files
+  async function uploadMultipleFiles(items) {
+    // Create batches of files to upload (max 5 at a time)
+    const batchSize = 5;
+    const batches = [];
+    
+    for (let i = 0; i < items.length; i += batchSize) {
+      batches.push(items.slice(i, i + batchSize));
+    }
+    
+    // Process each batch
+    for (const batch of batches) {
+      await Promise.all(batch.map(async (item, batchIndex) => {
+        // Find the item index in the original array
+        const index = items.indexOf(item);
+        const fileItem = selectedFilesContainer.querySelector(`[data-index="${index}"]`);
+        const progressBar = fileItem.querySelector('.file-progress-bar');
+        const statusEl = fileItem.querySelector('.file-status');
+        
+        // Update status
+        item.status = 'uploading';
+        statusEl.textContent = 'Uploading...';
+        
+        try {
+          // Create form data for this file
+          const formData = new FormData();
+          formData.append('file', item.file);
+          formData.append('folderPath', currentPath);
+          
+          // Create XMLHttpRequest for progress tracking
+          const xhr = new XMLHttpRequest();
+          
+          // Create a promise to handle the upload
+          await new Promise((resolve, reject) => {
+            xhr.open('POST', '/api/upload', true);
+            
+            xhr.upload.onprogress = (event) => {
+              if (event.lengthComputable) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                progressBar.style.width = percentComplete + '%';
+                item.progress = percentComplete;
+              }
+            };
+            
+            xhr.onload = function() {
+              if (xhr.status === 200) {
+                item.status = 'success';
+                statusEl.textContent = 'Complete';
+                statusEl.classList.add('success');
+                progressBar.style.width = '100%';
+                resolve();
+              } else {
+                item.status = 'error';
+                statusEl.textContent = 'Failed';
+                statusEl.classList.add('error');
+                
+                try {
+                  const response = JSON.parse(xhr.responseText);
+                  reject(new Error(response.error || 'Upload failed'));
+                } catch (e) {
+                  reject(new Error('Upload failed'));
+                }
+              }
+            };
+            
+            xhr.onerror = function() {
+              item.status = 'error';
+              statusEl.textContent = 'Failed';
+              statusEl.classList.add('error');
+              reject(new Error('Network error'));
+            };
+            
+            xhr.send(formData);
+          });
+          
+        } catch (error) {
+          console.error(`Error uploading ${item.file.name}:`, error);
+          item.status = 'error';
+          statusEl.textContent = 'Failed';
+          statusEl.classList.add('error');
+        }
+      }));
+    }
+  }
+  
+  // Reset the upload form
+  function resetUploadForm() {
+    setTimeout(() => {
+      uploadForm.reset();
+      fileNameDisplay.textContent = 'Choose files...';
+      fileInput.value = '';
+      
+      // Don't immediately hide the status UI so the user can see the results
+      setTimeout(() => {
+        selectedFilesContainer.style.display = 'none';
+        selectedFilesContainer.innerHTML = '';
+        displayNameInput.disabled = false;
+        displayNameInput.placeholder = "Enter display name (optional)";
+      }, 3000);
+      
+      // Clear arrays
+      selectedFiles = [];
+      uploadQueue = [];
+    }, 1000);
   }
   
   // Theme functions

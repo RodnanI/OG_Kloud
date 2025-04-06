@@ -22,6 +22,8 @@
   --item-radius: 10px;
   --toggle-bg: #ddd;
   --toggle-circle: #fff;
+  --primary-color-rgb: 67, 97, 238;
+  --danger-color-rgb: 231, 76, 60;
 }
 
 [data-theme="dark"] {
@@ -44,6 +46,8 @@
   --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
   --toggle-bg: #555;
   --toggle-circle: #121212;
+  --primary-color-rgb: 67, 97, 238;
+  --danger-color-rgb: 231, 76, 60;
 }
 
 * {
@@ -295,6 +299,104 @@ button:hover {
   width: 0%;
   transition: width 0.3s ease;
   border-radius: 5px;
+}
+
+/* Selected files display */
+.selected-files-container {
+  margin-top: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 10px;
+  background-color: var(--card-bg);
+  display: none;
+}
+
+.selected-file-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  margin-bottom: 10px;
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+  border-radius: var(--item-radius);
+  border-left: 3px solid var(--primary-color);
+}
+
+.selected-file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.selected-file-icon {
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+
+.selected-file-name {
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-file-size {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.selected-file-remove {
+  background: none;
+  color: var(--danger-color);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.selected-file-remove:hover {
+  background-color: rgba(var(--danger-color-rgb), 0.1);
+  background: none;
+}
+
+.file-progress-container {
+  width: 100%;
+  height: 6px;
+  background-color: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.file-progress-bar {
+  height: 100%;
+  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.file-status {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+  margin-right: 10px;
+  transition: color 0.3s ease;
+}
+
+.file-status.success {
+  color: var(--success-color);
+}
+
+.file-status.error {
+  color: var(--danger-color);
 }
 
 .file-item {
@@ -722,6 +824,61 @@ input:checked + .slider:before {
   font-size: 16px;
 }
 
+/* For multiple files display - add counter */
+.files-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  height: 20px;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  margin-left: 8px;
+}
+
+/* Enhance drop zone for drag and drop */
+.file-input-label.drag-over {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  border-color: var(--primary-color);
+  border-style: solid;
+}
+
+/* Add animation for uploads */
+@keyframes progress-pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.file-progress-bar.uploading {
+  animation: progress-pulse 1s infinite;
+}
+
+/* Add badge for new items */
+.new-item-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--success-color);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  margin-left: 10px;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .card {
@@ -888,7 +1045,7 @@ input:checked + .slider:before {
 }
 
 .theme-item.active {
-  background-color: rgba(var(--primary-color-rgb, 79, 70, 229), 0.1);
+  background-color: rgba(var(--primary-color-rgb), 0.1);
 }
 
 .theme-color {
