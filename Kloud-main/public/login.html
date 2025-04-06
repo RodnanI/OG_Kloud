@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kloud - Login</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .login-container {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: var(--background);
+    }
+    
+    .login-card {
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      width: 400px;
+      max-width: 90%;
+      padding: 30px;
+      text-align: center;
+    }
+    
+    .app-logo {
+      font-size: 3rem;
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+    
+    .login-form {
+      margin-top: 30px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .input-group {
+      position: relative;
+    }
+    
+    .input-group input {
+      width: 100%;
+      padding: 12px 20px 12px 45px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--btn-radius);
+      transition: border-color 0.3s;
+      font-size: 1rem;
+      background-color: var(--card-bg);
+      color: var(--text-primary);
+    }
+    
+    .input-group i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+    
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    
+    .login-btn {
+      width: 100%;
+      padding: 12px 20px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: var(--btn-radius);
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-weight: 600;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .login-btn:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    .error-message {
+      color: var(--danger-color);
+      margin-top: 20px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    
+    .error-message.show {
+      display: block;
+    }
+    
+    .theme-switch-wrapper {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-switch-wrapper">
+    <span class="theme-icon"><i class="fas fa-moon"></i></span>
+    <label class="theme-switch">
+      <input type="checkbox" id="theme-toggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+  
+  <div class="login-container">
+    <div class="login-card">
+      <div class="app-logo">
+        <i class="fas fa-cloud-upload-alt"></i>
+      </div>
+      <h1>Kloud</h1>
+      <p class="subtitle">File storage for the Kochs</p>
+      
+      <form id="login-form" class="login-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <div class="input-group">
+            <i class="fas fa-user"></i>
+            <input type="text" id="username" name="username" placeholder="Enter your username" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-group">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+          </div>
+        </div>
+        
+        <button type="submit" class="login-btn">
+          <i class="fas fa-sign-in-alt"></i>
+          Login
+        </button>
+      </form>
+      
+      <div id="error-message" class="error-message">
+        Invalid username or password. Please try again.
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Get DOM elements
+      const loginForm = document.getElementById('login-form');
+      const errorMessage = document.getElementById('error-message');
+      const themeToggle = document.getElementById('theme-toggle');
+      const themeIcon = document.querySelector('.theme-icon i');
+      
+      // Initialize theme
+      initTheme();
+      
+      // Login form handling
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        try {
+          console.log('Attempting to log in with username:', username);
+          const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+            credentials: 'include' 
+          });
+          
+          // Check if response is ok before trying to parse JSON
+          if (!response.ok) {
+            if (response.status === 404) {
+              console.error('Login endpoint not found (404). Check server configuration.');
+              errorMessage.textContent = 'Login service unavailable. Please try again later.';
+              errorMessage.classList.add('show');
+              return;
+            }
+            
+            const errorText = await response.text();
+            console.error('Login failed:', response.status, errorText);
+            errorMessage.classList.add('show');
+            return;
+          }
+          
+          // Try to parse JSON
+          let data;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            console.error('Failed to parse server response as JSON:', jsonError);
+            errorMessage.textContent = 'Server response error. Please try again.';
+            errorMessage.classList.add('show');
+            return;
+          }
+          
+          // Check login success
+          if (data.success) {
+            console.log('Login successful, redirecting...');
+            window.location.replace('/');
+          } else {
+            console.error('Login failed:', data.message || 'Authentication failed');
+            errorMessage.classList.add('show');
+          }
+        } catch (error) {
+          console.error('Login request failed:', error);
+          errorMessage.textContent = 'Connection error. Please try again.';
+          errorMessage.classList.add('show');
+        }
+        
+        // Hide error message after 3 seconds
+        setTimeout(() => {
+          errorMessage.classList.remove('show');
+        }, 3000);
+      });
+      
+      // Theme toggle
+      themeToggle.addEventListener('change', () => {
+        toggleTheme();
+      });
+      
+      function initTheme() {
+        // Check for saved theme preference
+        const darkMode = localStorage.getItem('darkMode') === 'true';
+        
+        // Apply theme based on preference
+        if (darkMode) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          themeToggle.checked = true;
+          // Ensure correct icon is showing
+          themeIcon.innerHTML = '<i class="fas fa-sun"></i>';
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+          themeToggle.checked = false;
+          // Ensure correct icon is showing
+          themeIcon.innerHTML = '<i class="fas fa-moon"></i>';
+        }
+      }
+      
+      function toggleTheme() {
+        if (themeToggle.checked) {
+          // Switch to dark mode
+          document.documentElement.setAttribute('data-theme', 'dark');
+          localStorage.setItem('darkMode', 'true');
+          // Set sun icon
+          themeIcon.innerHTML = '<i class="fas fa-sun"></i>';
+        } else {
+          // Switch to light mode
+          document.documentElement.setAttribute('data-theme', 'light');
+          localStorage.setItem('darkMode', 'false');
+          // Set moon icon
+          themeIcon.innerHTML = '<i class="fas fa-moon"></i>';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
