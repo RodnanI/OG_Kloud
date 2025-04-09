@@ -24,6 +24,7 @@
   --toggle-circle: #fff;
   --primary-color-rgb: 67, 97, 238;
   --danger-color-rgb: 231, 76, 60;
+  --nav-bg: #f0f2f5;
 }
 
 [data-theme="dark"] {
@@ -48,6 +49,7 @@
   --toggle-circle: #121212;
   --primary-color-rgb: 67, 97, 238;
   --danger-color-rgb: 231, 76, 60;
+  --nav-bg: #1a1a1a;
 }
 
 /* ANIMATION 5: FADE-IN LETTERS */
@@ -82,18 +84,20 @@ body {
   line-height: 1.6;
   background-color: var(--background);
   color: var(--text-primary);
-  padding: 20px;
+  padding: 0;
+  min-height: 100vh;
 }
 
 .container {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0;
+  padding: 20px;
 }
 
 header {
   text-align: center;
   margin-bottom: 30px;
+  padding-top: 20px;
 }
 
 h1 {
@@ -111,25 +115,69 @@ h1 {
   margin-bottom: 1.5rem;
 }
 
+/* App container */
+.app-container {
+  min-height: calc(100vh - 200px);
+}
+
+/* Navigation */
+.app-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--nav-bg);
+  border-radius: var(--border-radius);
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.nav-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  background-color: var(--folder-color);
+  color: white;
+  border: none;
+  border-radius: var(--btn-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.action-btn:hover {
+  background-color: var(--folder-hover);
+}
+
+/* Grid layout */
+.app-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+}
+
+.card-header {
+  margin-bottom: 20px;
+}
+
 .card {
   background-color: var(--card-bg);
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
-  padding: 30px;
-  margin-bottom: 30px;
+  padding: 20px;
+  margin-bottom: 20px;
   transition: box-shadow 0.3s ease;
-}
-
-.card:hover {
-  box-shadow: var(--shadow);
 }
 
 /* Breadcrumb styles */
 .breadcrumb-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+  padding: 15px 20px;
 }
 
 .breadcrumb {
@@ -138,7 +186,6 @@ h1 {
   align-items: center;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 5px;
 }
 
 .breadcrumb-item {
@@ -163,27 +210,9 @@ h1 {
   color: var(--text-secondary);
 }
 
-.folder-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.action-btn {
-  background-color: var(--folder-color);
-  color: white;
-  border: none;
-  border-radius: var(--btn-radius);
-  padding: 8px 15px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 500;
-}
-
-.action-btn:hover {
-  background-color: var(--folder-hover);
+/* Files container */
+.files-container {
+  min-height: 400px;
 }
 
 h2 {
@@ -204,24 +233,23 @@ h2::before {
   border-radius: 2px;
 }
 
-.upload-container form {
+/* Upload form */
+#upload-form {
   display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 15px;
 }
 
 .file-input-container {
   position: relative;
-  flex: 1;
-  min-width: 200px;
 }
 
 .file-input-label {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 20px;
+  padding: 12px 15px;
   background-color: var(--card-bg);
   border: 2px dashed var(--border-color);
   border-radius: var(--btn-radius);
@@ -232,6 +260,7 @@ h2::before {
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--text-primary);
+  width: 100%;
 }
 
 .file-input-label:hover {
@@ -255,8 +284,7 @@ h2::before {
 }
 
 .form-group {
-  flex: 1;
-  min-width: 200px;
+  width: 100%;
 }
 
 .form-group label {
@@ -267,7 +295,7 @@ h2::before {
 
 input[type="text"] {
   width: 100%;
-  padding: 12px 20px;
+  padding: 12px 15px;
   border: 1px solid var(--border-color);
   border-radius: var(--btn-radius);
   transition: border-color 0.3s;
@@ -286,7 +314,7 @@ input[type="text"]:focus {
 }
 
 button {
-  padding: 12px 20px;
+  padding: 12px 15px;
   background-color: var(--primary-color);
   color: white;
   border: none;
@@ -297,6 +325,7 @@ button {
   font-size: 1rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -306,7 +335,7 @@ button:hover {
 
 .progress-bar {
   width: 100%;
-  height: 10px;
+  height: 8px;
   background-color: #e9ecef;
   border-radius: 5px;
   margin-top: 15px;
@@ -325,7 +354,7 @@ button:hover {
 /* Selected files display */
 .selected-files-container {
   margin-top: 15px;
-  max-height: 300px;
+  max-height: 200px;
   overflow-y: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
@@ -420,6 +449,7 @@ button:hover {
   color: var(--danger-color);
 }
 
+/* File items */
 .file-item {
   display: flex;
   justify-content: space-between;
@@ -902,25 +932,20 @@ input:checked + .slider:before {
 
 /* Responsive design */
 @media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+
+  .app-grid {
+    grid-template-columns: 1fr;
+  }
+
   .card {
-    padding: 20px;
+    padding: 15px;
   }
   
   h1 {
     font-size: 2rem;
-  }
-  
-  form {
-    flex-direction: column;
-  }
-  
-  .file-input-container, .form-group {
-    width: 100%;
-  }
-  
-  button#upload-button {
-    width: 100%;
-    justify-content: center;
   }
   
   .file-item {
@@ -941,13 +966,12 @@ input:checked + .slider:before {
     padding: 0 20px;
   }
   
-  .breadcrumb-container {
+  .app-nav {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    gap: 15px;
   }
   
-  .folder-actions {
+  .nav-actions {
     width: 100%;
   }
   
@@ -955,10 +979,14 @@ input:checked + .slider:before {
     width: 100%;
     justify-content: center;
   }
+  
+  .breadcrumb {
+    width: 100%;
+    overflow-x: auto;
+  }
 }
 
-/* Theme Switcher Styles - Add to your styles.css file */
-
+/* Theme Switcher Styles */
 .theme-switcher-container {
   position: fixed;
   bottom: 20px;
