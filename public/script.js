@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize theme from localStorage
   initTheme();
   
+  // Setup fade-in animation for title
+  setupFadeInLetters();
+  
   // Load files on page load
   loadFiles(currentPath);
   
@@ -117,6 +120,34 @@ document.addEventListener('DOMContentLoaded', () => {
   themeToggle.addEventListener('change', () => {
     toggleTheme();
   });
+  
+  // Setup fade-in letters animation for title
+  function setupFadeInLetters() {
+    // Get the title element
+    const title = document.querySelector('header h1');
+    if (!title) return;
+    
+    // Store the icon
+    const cloudIcon = title.querySelector('i')?.outerHTML || '<i class="fas fa-cloud-upload-alt"></i>';
+    
+    // Get the text content (Kloud)
+    const titleText = title.textContent.trim();
+    
+    // Split the text into individual letters with opacity 0 and animation delay
+    const letters = titleText.split('').map((letter, i) => 
+      `<span style="opacity: 0; animation-delay: ${0.3 + i * 0.1}s">${letter}</span>`
+    ).join('');
+    
+    // Update the title HTML with the cloud icon and letter spans
+    title.innerHTML = `${cloudIcon} ${letters}`;
+    
+    // Also animate the icon
+    const icon = title.querySelector('i');
+    if (icon) {
+      icon.style.opacity = '0';
+      icon.style.animation = 'fade-in-letter 0.8s ease-out forwards';
+    }
+  }
   
   // Functions
   function showToast(message, type = 'info') {
@@ -516,7 +547,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const confirmBtn = itemElement.querySelector('.confirm-delete-btn');
       confirmBtn.classList.add('deleting');
       
-      // FIX: Changed from /api/items/${encodeURIComponent(itemPath)} to /api/items?path=${encodeURIComponent(itemPath)}
       const response = await fetch(`/api/items?path=${encodeURIComponent(itemPath)}`, {
         method: 'DELETE',
       });
