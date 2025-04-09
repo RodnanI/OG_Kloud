@@ -283,10 +283,47 @@ app.put('/api/rename', (req, res) => {
   }
 });
 
-// Delete a file or folder
+// Delete a file or folder - MODIFIED to support both query param and URL param
+app.delete('/api/items', (req, res) => {
+  try {
+    const itemPath = req.query.path;
+    
+    if (!itemPath) {
+      return res.status(400).json({ error: 'Item path is required' });
+    }
+    
+    const fullPath = path.join(uploadsDir, itemPath);
+    
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    const isDirectory = fs.statSync(fullPath).isDirectory();
+    
+    if (isDirectory) {
+      // Recursively delete folder and contents
+      fs.rmSync(fullPath, { recursive: true, force: true });
+    } else {
+      // Delete a file
+      fs.unlinkSync(fullPath);
+    }
+    
+    res.json({ message: `${isDirectory ? 'Folder' : 'File'} deleted successfully` });
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    res.status(500).json({ error: 'Failed to delete item' });
+  }
+});
+
+// For backward compatibility, also support the URL parameter version
 app.delete('/api/items/:itemPath(*)', (req, res) => {
   try {
     const itemPath = req.params.itemPath;
+    
+    if (!itemPath) {
+      return res.status(400).json({ error: 'Item path is required' });
+    }
+    
     const fullPath = path.join(uploadsDir, itemPath);
     
     if (!fs.existsSync(fullPath)) {

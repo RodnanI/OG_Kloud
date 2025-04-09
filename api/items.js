@@ -18,6 +18,7 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Accept both query parameter and URL path for backward compatibility
     const itemPath = req.query.path;
     
     if (!itemPath) {

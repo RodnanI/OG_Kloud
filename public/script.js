@@ -547,6 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const confirmBtn = itemElement.querySelector('.confirm-delete-btn');
       confirmBtn.classList.add('deleting');
       
+      // Use query parameter approach which works with both the server and serverless API
       const response = await fetch(`/api/items?path=${encodeURIComponent(itemPath)}`, {
         method: 'DELETE',
       });
