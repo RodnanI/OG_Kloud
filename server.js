@@ -207,10 +207,15 @@ app.post('/api/upload-multiple', upload.array('files', 10), (req, res) => {
   });
 });
 
-// Download a file
-app.get('/api/download/:filePath(*)', (req, res) => {
+// Download a file - Updated to handle query parameters
+app.get('/api/download', (req, res) => {
   try {
-    const filePath = req.params.filePath;
+    const filePath = req.query.path;
+    
+    if (!filePath) {
+      return res.status(400).json({ error: 'File path is required' });
+    }
+    
     const fullPath = path.join(uploadsDir, filePath);
     
     if (!fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {

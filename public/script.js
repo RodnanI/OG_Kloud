@@ -527,19 +527,20 @@ document.addEventListener('DOMContentLoaded', () => {
     openModal(renameModal);
   }
   
-  function downloadFile(filePath, displayName) {
-    // Create a link and simulate a click to download the file
-    const downloadUrl = `/api/download?path=${encodeURIComponent(filePath)}`;
-    
-    // Create a temporary link element and trigger download
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showToast(`Downloading ${displayName}...`, 'success');
-  }
+  // Excerpt from public/script.js (downloadFile function)
+function downloadFile(filePath, displayName) {
+  // Create a link and simulate a click to download the file
+  const downloadUrl = `/api/download?path=${encodeURIComponent(filePath)}`;
+  
+  // Create a temporary link element and trigger download
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  showToast(`Downloading ${displayName}...`, 'success');
+}
   
   async function deleteItem(itemPath, itemType, itemName, itemElement) {
     try {

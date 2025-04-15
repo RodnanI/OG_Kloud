@@ -25,19 +25,25 @@ module.exports = async (req, res) => {
     }
     
     // Find the file in Vercel Blob
-    const { blobs } = await list({ prefix: filePath });
+    const { blobs } = await list({ prefix: filePath, limit: 1 });
     
-    if (blobs.length === 0) {
+    if (!blobs || blobs.length === 0) {
       return res.status(404).json({ error: 'File not found' });
     }
     
-    // Redirect to the file URL for download
+    // Get the file URL
     const fileUrl = blobs[0].url;
     
     // Extract display name for download
     const parts = filePath.split('/');
     const filename = parts[parts.length - 1];
-    const displayName = filename.split('-').slice(2).join('-');
+    
+    // Extract the actual display name (remove timestamp prefix if it exists)
+    let displayName = filename;
+    const timestampMatch = filename.match(/^\d+-\d+-(.+)$/);
+    if (timestampMatch && timestampMatch[1]) {
+      displayName = timestampMatch[1];
+    }
     
     // Set headers for download
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(displayName)}"`);
@@ -48,4 +54,4 @@ module.exports = async (req, res) => {
     console.error('Error downloading file:', error);
     res.status(500).json({ error: 'Failed to download file: ' + error.message });
   }
-};
+}
