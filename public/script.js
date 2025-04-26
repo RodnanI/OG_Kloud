@@ -45,16 +45,57 @@ document.addEventListener('DOMContentLoaded', () => {
     'css': 'fa-file-code',
     'js': 'fa-file-code',
     'json': 'fa-file-code',
+    'csv': 'fa-file-csv',
+    'md': 'fa-file-alt',
+    'svg': 'fa-file-image',
+    'webp': 'fa-file-image',
+    'gif': 'fa-file-image',
+    'png': 'fa-file-image',
+    'jpg': 'fa-file-image',
+    'jpeg': 'fa-file-image',
+    'bmp': 'fa-file-image',
+    'tiff': 'fa-file-image',
+    'ico': 'fa-file-image',
+    'webm': 'fa-file-video',
+    'avi': 'fa-file-video',
+    'mkv': 'fa-file-video',
+    'flv': 'fa-file-video',
+    'wmv': 'fa-file-video',
+    'ogg': 'fa-file-audio',
+    'flac': 'fa-file-audio',
+    'aac': 'fa-file-audio',
+    'wma': 'fa-file-audio',
+    'm4a': 'fa-file-audio',
+    '7z': 'fa-file-archive',
+    'tar': 'fa-file-archive',
+    'gz': 'fa-file-archive',
+    'bz2': 'fa-file-archive',
+    'rtf': 'fa-file-alt',
+    'xml': 'fa-file-code',
+    'py': 'fa-file-code',
+    'java': 'fa-file-code',
+    'c': 'fa-file-code',
+    'cpp': 'fa-file-code',
+    'cs': 'fa-file-code',
+    'php': 'fa-file-code',
+    'rb': 'fa-file-code',
+    'go': 'fa-file-code',
+    'sql': 'fa-file-code',
+    'psd': 'fa-file-image',
+    'ai': 'fa-file-image',
+    'eps': 'fa-file-image',
+    'indd': 'fa-file-alt',
     'default': 'fa-file'
   };
   
   // File type categories for color coding
   const fileTypeCategories = {
-    'image': ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'],
-    'document': ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'html', 'md'],
-    'archive': ['zip', 'rar', '7z', 'tar', 'gz'],
-    'video': ['mp4', 'mov', 'avi', 'wmv', 'mkv', 'webm'],
-    'audio': ['mp3', 'wav', 'ogg', 'flac', 'm4a']
+    'image': ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico', 'psd', 'ai', 'eps'],
+    'document': ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'html', 'md', 'csv', 'xml', 'json', 'indd'],
+    'archive': ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'],
+    'video': ['mp4', 'mov', 'avi', 'wmv', 'mkv', 'webm', 'flv', '3gp', 'm4v'],
+    'audio': ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'],
+    'code': ['js', 'css', 'html', 'py', 'java', 'c', 'cpp', 'cs', 'php', 'rb', 'go', 'sql', 'xml']
   };
   
   // Initialize theme from localStorage
@@ -754,11 +795,12 @@ function downloadFile(filePath, displayName) {
     if (mimeType.startsWith('audio/')) return 'fa-file-audio';
     if (mimeType.startsWith('text/')) return 'fa-file-alt';
     if (mimeType.includes('pdf')) return 'fa-file-pdf';
-    if (mimeType.includes('word') || mimeType.includes('document')) return 'fa-file-word';
-    if (mimeType.includes('excel') || mimeType.includes('sheet')) return 'fa-file-excel';
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'fa-file-powerpoint';
-    if (mimeType.includes('zip') || mimeType.includes('archive') || mimeType.includes('compressed')) return 'fa-file-archive';
-    if (mimeType.includes('html') || mimeType.includes('javascript') || mimeType.includes('css')) return 'fa-file-code';
+    if (mimeType.includes('word') || mimeType.includes('document') || mimeType.includes('msword') || mimeType.includes('officedocument.wordprocessing')) return 'fa-file-word';
+    if (mimeType.includes('excel') || mimeType.includes('sheet') || mimeType.includes('spreadsheet') || mimeType.includes('officedocument.spreadsheet')) return 'fa-file-excel';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation') || mimeType.includes('officedocument.presentation')) return 'fa-file-powerpoint';
+    if (mimeType.includes('zip') || mimeType.includes('archive') || mimeType.includes('compressed') || mimeType.includes('x-tar') || mimeType.includes('x-7z')) return 'fa-file-archive';
+    if (mimeType.includes('html') || mimeType.includes('javascript') || mimeType.includes('css') || mimeType.includes('xml') || mimeType.includes('json')) return 'fa-file-code';
+    if (mimeType.includes('csv')) return 'fa-file-csv';
     
     return null;
   }
@@ -936,6 +978,9 @@ function downloadFile(filePath, displayName) {
       await new Promise((resolve, reject) => {
         xhr.open('POST', '/api/upload', true);
         
+        // Set longer timeout for large files (10 minutes)
+        xhr.timeout = 10 * 60 * 1000; 
+        
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
             const percentComplete = (event.loaded / event.total) * 100;
@@ -970,6 +1015,13 @@ function downloadFile(filePath, displayName) {
           statusEl.textContent = 'Failed';
           statusEl.classList.add('error');
           reject(new Error('Network error'));
+        };
+        
+        xhr.ontimeout = function() {
+          item.status = 'error';
+          statusEl.textContent = 'Timeout';
+          statusEl.classList.add('error');
+          reject(new Error('Upload timed out'));
         };
         
         xhr.send(formData);
@@ -1009,55 +1061,82 @@ function downloadFile(filePath, displayName) {
         try {
           // Create form data for this file
           const formData = new FormData();
-          formData.append('file', item.file);
+          formData.append('files', item.file);
           formData.append('folderPath', currentPath);
           
-          // Create XMLHttpRequest for progress tracking
-          const xhr = new XMLHttpRequest();
-          
-          // Create a promise to handle the upload
-          await new Promise((resolve, reject) => {
-            xhr.open('POST', '/api/upload', true);
+          // For large files, use XMLHttpRequest to track progress
+          if (item.file.size > 50 * 1024 * 1024) { // For files larger than 50MB
+            const xhr = new XMLHttpRequest();
             
-            xhr.upload.onprogress = (event) => {
-              if (event.lengthComputable) {
-                const percentComplete = (event.loaded / event.total) * 100;
-                progressBar.style.width = percentComplete + '%';
-                item.progress = percentComplete;
-              }
-            };
-            
-            xhr.onload = function() {
-              if (xhr.status === 200) {
-                item.status = 'success';
-                statusEl.textContent = 'Complete';
-                statusEl.classList.add('success');
-                progressBar.style.width = '100%';
-                resolve();
-              } else {
+            await new Promise((resolve, reject) => {
+              xhr.open('POST', '/api/upload-multiple', true);
+              
+              // Set longer timeout for large files (10 minutes)
+              xhr.timeout = 10 * 60 * 1000;
+              
+              xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                  const percentComplete = (event.loaded / event.total) * 100;
+                  progressBar.style.width = percentComplete + '%';
+                  item.progress = percentComplete;
+                }
+              };
+              
+              xhr.onload = function() {
+                if (xhr.status === 200) {
+                  item.status = 'success';
+                  statusEl.textContent = 'Complete';
+                  statusEl.classList.add('success');
+                  progressBar.style.width = '100%';
+                  resolve();
+                } else {
+                  item.status = 'error';
+                  statusEl.textContent = 'Failed';
+                  statusEl.classList.add('error');
+                  
+                  try {
+                    const response = JSON.parse(xhr.responseText);
+                    reject(new Error(response.error || 'Upload failed'));
+                  } catch (e) {
+                    reject(new Error('Upload failed'));
+                  }
+                }
+              };
+              
+              xhr.onerror = function() {
                 item.status = 'error';
                 statusEl.textContent = 'Failed';
                 statusEl.classList.add('error');
-                
-                try {
-                  const response = JSON.parse(xhr.responseText);
-                  reject(new Error(response.error || 'Upload failed'));
-                } catch (e) {
-                  reject(new Error('Upload failed'));
-                }
-              }
-            };
+                reject(new Error('Network error'));
+              };
+              
+              xhr.ontimeout = function() {
+                item.status = 'error';
+                statusEl.textContent = 'Timeout';
+                statusEl.classList.add('error');
+                reject(new Error('Upload timed out'));
+              };
+              
+              xhr.send(formData);
+            });
+          } else {
+            // Use fetch for smaller files
+            const response = await fetch('/api/upload-multiple', {
+              method: 'POST',
+              body: formData
+            });
             
-            xhr.onerror = function() {
-              item.status = 'error';
-              statusEl.textContent = 'Failed';
-              statusEl.classList.add('error');
-              reject(new Error('Network error'));
-            };
+            const result = await response.json();
             
-            xhr.send(formData);
-          });
-          
+            if (response.ok) {
+              item.status = 'success';
+              statusEl.textContent = 'Complete';
+              statusEl.classList.add('success');
+              progressBar.style.width = '100%';
+            } else {
+              throw new Error(result.error || 'Upload failed');
+            }
+          }
         } catch (error) {
           console.error(`Error uploading ${item.file.name}:`, error);
           item.status = 'error';

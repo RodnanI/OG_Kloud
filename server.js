@@ -45,11 +45,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB file size limit
-    files: 10 // maximum 10 files at once
-  }
+  storage: storage
 });
 
 // Middleware
@@ -194,7 +190,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 });
 
 // Upload multiple files
-app.post('/api/upload-multiple', upload.array('files', 10), (req, res) => {
+app.post('/api/upload-multiple', upload.array('files'), (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'No files uploaded' });
   }
@@ -430,12 +426,6 @@ app.post('/api/themes/set', (req, res) => {
 // Error handler for multer file size limit
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ error: 'File size exceeds the limit (50MB)' });
-    }
-    if (err.code === 'LIMIT_FILE_COUNT') {
-      return res.status(413).json({ error: 'Too many files. Maximum allowed is 10 files at once.' });
-    }
     return res.status(400).json({ error: `Upload error: ${err.message}` });
   }
   next(err);

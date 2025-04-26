@@ -816,6 +816,10 @@ button:hover {
   border-left-color: #FB5607;
 }
 
+.file-item.code {
+  border-left-color: #06D6A0;
+}
+
 /* Dark mode toggle */
 .theme-switch-wrapper {
   position: fixed;

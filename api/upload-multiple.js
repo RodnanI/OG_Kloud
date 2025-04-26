@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
 
   try {
     // Process the uploaded files using multer
-    await runMiddleware(req, res, upload.array('files', 10)); // max 10 files
+    await runMiddleware(req, res, upload.array('files'));
     
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
